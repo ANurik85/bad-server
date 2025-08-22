@@ -4,21 +4,36 @@ import path from 'path'
 
 export default function serveStatic(baseDir: string) {
     return (req: Request, res: Response, next: NextFunction) => {
-        // Определяем полный путь к запрашиваемому файлу
-        const filePath = path.join(baseDir, req.path)
-
-        // Проверяем, существует ли файл
-        fs.access(filePath, fs.constants.F_OK, (err) => {
-            if (err) {
-                // Файл не существует отдаем дальше мидлварам
-                return next()
+        try {
+            const normalizedBaseDir = path.resolve(baseDir)
+            
+            const requestedPath = path.join(normalizedBaseDir, req.path)
+            
+            const resolvedPath = path.resolve(requestedPath)
+            
+            if (!resolvedPath.startsWith(normalizedBaseDir + path.sep) && resolvedPath !== normalizedBaseDir) {
+                return res.status(403).json({ error: 'Forbidden: Path traversal detected' })
             }
-            // Файл существует, отправляем его клиенту
-            return res.sendFile(filePath, (err) => {
+
+            fs.access(resolvedPath, fs.constants.F_OK, (err) => {
                 if (err) {
-                    next(err)
+                    return next()
                 }
+                
+                fs.stat(resolvedPath, (statErr, stats) => {
+                    if (statErr || !stats.isFile()) {
+                        return next()
+                    }
+                    
+                    return res.sendFile(resolvedPath, (sendErr) => {
+                        if (sendErr) {
+                            next(sendErr)
+                        }
+                    })
+                })
             })
-        })
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid path' })
+        }
     }
 }
