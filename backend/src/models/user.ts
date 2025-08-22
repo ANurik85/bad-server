@@ -16,15 +16,16 @@ export enum Role {
 export interface IUser extends Document {
     name: string
     email: string
-    password: string
-    tokens: { token: string }[]
-    roles: Role[]
+    password?: string
+    tokens?: { token: string }[]
+    roles?: Role[]
     phone: string
     totalAmount: number
     orderCount: number
     orders: Types.ObjectId[]
     lastOrderDate: Date | null
     lastOrder: Types.ObjectId | null
+    _id: Types.ObjectId
 }
 
 interface IUserMethods {
@@ -108,7 +109,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             transform: (_doc, ret) => {
                 delete ret.tokens
                 delete ret.password
-                delete ret._id
+                delete (ret as any)._id
                 delete ret.roles
                 return ret
             },
@@ -120,7 +121,10 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
 userSchema.pre('save', async function hashingPassword(next) {
     try {
         if (this.isModified('password')) {
-            this.password = md5(this.password)
+           const password = this.get('password');
+            if (password) {
+                this.password = md5(password);
+            }
         }
         next()
     } catch (error) {
@@ -168,7 +172,7 @@ userSchema.methods.generateRefreshToken =
             .digest('hex')
 
         // Сохраняем refresh токена в базу данных, можно делать в контроллере авторизации/регистрации
-        user.tokens.push({ token: rTknHash })
+        user.tokens?.push({ token: rTknHash })
         await user.save()
 
         return refreshToken
