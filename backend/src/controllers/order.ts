@@ -118,7 +118,13 @@ export const getOrders = async (
 
         const sort: { [key: string]: any } = {}
 
+         const allowedSortFields = ['createdAt', 'orderNumber', 'totalAmount', 'status']
+        
+        if (sortField && allowedSortFields.includes(sortField as string)) {
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
+        } else {
+           sort.createdAt = sortOrder === 'desc' ? -1 : 1
+        }
 
         aggregatePipeline.push(
             { $sort: sort },
