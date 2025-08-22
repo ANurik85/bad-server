@@ -3,6 +3,9 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import escapeRegExp from '../utils/escapeRegExp'
+import { normalizeLimit } from '../utils/sanitize'
+import { createSafeRegExp } from '../utils/safeRegExp'
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -28,6 +31,8 @@ export const getCustomers = async (
             orderCountTo,
             search,
         } = req.query
+
+        const normalizedLimit = normalizeLimit(limit, 10, 10)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -92,7 +97,12 @@ export const getCustomers = async (
         }
 
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            const escapedSearch = escapeRegExp(search as string)
+             const searchRegex = createSafeRegExp(escapedSearch, {
+        flags: 'i',
+        timeout: 500,
+        maxLength: 50
+    })
             const orders = await Order.find(
                 {
                     $or: [{ deliveryAddress: searchRegex }],
@@ -116,8 +126,8 @@ export const getCustomers = async (
 
         const options = {
             sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (Number(page) - 1) *  normalizedLimit,
+            limit:  normalizedLimit,
         }
 
         const users = await User.find(filters, null, options).populate([
@@ -137,7 +147,7 @@ export const getCustomers = async (
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / Number(limit))
+        const totalPages = Math.ceil(totalUsers / normalizedLimit)
 
         res.status(200).json({
             customers: users,
@@ -145,7 +155,7 @@ export const getCustomers = async (
                 totalUsers,
                 totalPages,
                 currentPage: Number(page),
-                pageSize: Number(limit),
+                pageSize:  normalizedLimit,
             },
         })
     } catch (error) {
@@ -179,11 +189,21 @@ export const updateCustomer = async (
     next: NextFunction
 ) => {
     try {
+          const allowedFields = ['name', 'phone']
+        const updateData: any = {}
+        
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field]
+            }
+        })
+
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
+             updateData,
             {
                 new: true,
+                runValidators: true,
             }
         )
             .orFail(

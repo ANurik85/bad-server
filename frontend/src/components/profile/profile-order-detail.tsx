@@ -71,15 +71,11 @@ export default function ProfileOrderDetail() {
                 extraClass: styles.profile__gridRowFullWidth,
                 render: (dataInfo: OrderData) => (
                     <>
-                        {dataInfo.comment ? (
-                <div
-                    dangerouslySetInnerHTML={{
-                        __html: sanitizeHTML(dataInfo.comment),
-                    }}
-                />
-            ) : (
-                'Комментариев нет'
-                        )}
+                        <div
+                            dangerouslySetInnerHTML={{
+                                __html: sanitizeHTML(dataInfo.comment),
+                            }}
+                        />
                     </>
                 ),
             },

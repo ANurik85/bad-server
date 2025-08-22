@@ -15,8 +15,8 @@ const app = express()
 
 app.use(cookieParser())
 
-app.use(cors())
-// app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
+// app.use(cors())
+app.use(cors({ origin: process.env.ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(serveStatic(path.join(__dirname, 'public')))
