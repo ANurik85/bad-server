@@ -2,6 +2,7 @@ import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
+import { existsSync, mkdirSync } from 'fs';
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -20,15 +21,18 @@ const storage = multer.diskStorage({
         _file: Express.Multer.File,
         cb: DestinationCallback
     ) => {
-        cb(
-            null,
-            join(
-                __dirname,
-                process.env.UPLOAD_PATH_TEMP
-                    ? `../public/${process.env.UPLOAD_PATH_TEMP}`
-                    : '../public'
-            )
-        )
+        const uploadPath = join(
+            __dirname,
+            process.env.UPLOAD_PATH_TEMP
+                ? `../public/${process.env.UPLOAD_PATH_TEMP}`
+                : '../public'
+        );
+
+        if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+        }
+
+        cb(null, uploadPath);
     },
 
     filename: (
@@ -37,11 +41,11 @@ const storage = multer.diskStorage({
         cb: FileNameCallback
     ) => {
 
-        const extension = mimeToExtension[file.mimetype] || '.bin'
-        const safeFileName = `${randomUUID()}${extension}`
-        cb(null, safeFileName)
+        const extension = mimeToExtension[file.mimetype] || '.bin';
+        const safeFileName = `${randomUUID()}${extension}`;
+        cb(null, safeFileName);
     },
-})
+});
 
 const types = [
     'image/png',
@@ -57,7 +61,6 @@ const fileFilter = (
     cb: FileFilterCallback
 ) => {
     if (!types.includes(file.mimetype)) {
-
         return cb(new Error('Недопустимый тип файла'))
     }
 

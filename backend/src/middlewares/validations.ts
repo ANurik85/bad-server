@@ -35,7 +35,8 @@ export const validateOrderBody = celebrate({
         email: Joi.string().email().required().messages({
             'string.empty': 'Не указан email',
         }),
-        phone: Joi.string().required().pattern(phoneRegExp).messages({
+        phone: Joi.string().required().max(20).pattern(phoneRegExp).messages({
+            'string.max': 'Телефон слишком длинный',
             'string.empty': 'Не указан телефон',
         }),
         address: Joi.string().required().messages({
@@ -79,7 +80,6 @@ export const validateProductUpdateBody = celebrate({
         }),
         image: Joi.object().keys({
             fileName: Joi.string().required(),
-            originalName: Joi.string().required(),
         }),
         category: Joi.string(),
         description: Joi.string(),

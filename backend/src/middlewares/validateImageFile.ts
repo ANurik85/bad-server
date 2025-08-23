@@ -11,11 +11,10 @@ export const validateImageFile = async (
     }
 
     try {
-       
+        
         if (req.file.size < 2048) {
             return res.status(400).json({ error: 'Файл слишком маленький (минимум 2KB)' })
         }
-
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Timeout processing image')), 5000)
         })
