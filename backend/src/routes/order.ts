@@ -11,6 +11,7 @@ import {
 import auth, { roleGuardMiddleware } from '../middlewares/auth'
 import { validateOrderBody } from '../middlewares/validations'
 import { Role } from '../models/user'
+import { criticalLimiter } from '../middlewares/rate-limit'
 
 const orderRouter = Router()
 
@@ -28,6 +29,7 @@ orderRouter.patch(
     '/:orderNumber',
     auth,
     roleGuardMiddleware(Role.Admin),
+    criticalLimiter,
     updateOrder
 )
 

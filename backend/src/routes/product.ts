@@ -12,6 +12,7 @@ import {
     validateProductUpdateBody,
 } from '../middlewares/validations'
 import { Role } from '../models/user'
+import { criticalLimiter } from '../middlewares/rate-limit'
 
 const productRouter = Router()
 
@@ -20,6 +21,7 @@ productRouter.post(
     '/',
     auth,
     roleGuardMiddleware(Role.Admin),
+    criticalLimiter,
     validateProductBody,
     createProduct
 )
@@ -27,6 +29,7 @@ productRouter.delete(
     '/:productId',
     auth,
     roleGuardMiddleware(Role.Admin),
+    criticalLimiter,
     validateObjId,
     deleteProduct
 )
@@ -34,6 +37,7 @@ productRouter.patch(
     '/:productId',
     auth,
     roleGuardMiddleware(Role.Admin),
+    criticalLimiter,
     validateObjId,
     validateProductUpdateBody,
     updateProduct
