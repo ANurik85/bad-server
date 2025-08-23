@@ -6,7 +6,7 @@ import Order, { IOrder } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 import escapeRegExp from '../utils/escapeRegExp'
-import { sanitizeHTML, normalizeLimit, validateStatus } from '../utils/sanitize'
+import { sanitizeHTML, normalizeLimit } from '../utils/sanitize'
 import { createSafeRegExp } from '../utils/safeRegExp'
 
 // eslint-disable-next-line max-len
@@ -35,11 +35,14 @@ export const getOrders = async (
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
-         if (status) {
-            const validatedStatus = validateStatus(status)
-            if (validatedStatus) {
-                filters.status = validatedStatus
+        if (status) {
+            const allowedStatuses = ['cancelled', 'completed', 'new', 'delivering']
+            
+            if (typeof status !== 'string' || !allowedStatuses.includes(status)) {
+                return next(new BadRequestError('Недопустимое значение статуса'))
             }
+            
+            filters.status = status
         }
 
         if (totalAmountFrom) {
@@ -118,13 +121,13 @@ export const getOrders = async (
 
         const sort: { [key: string]: any } = {}
 
-         const allowedSortFields = ['createdAt', 'orderNumber', 'totalAmount', 'status']
+        const allowedSortFields = ['createdAt', 'orderNumber', 'totalAmount', 'status']
         
-        if (sortField && allowedSortFields.includes(sortField as string)) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
-        } else {
-           sort.createdAt = sortOrder === 'desc' ? -1 : 1
+        if (sortField && !allowedSortFields.includes(sortField as string)) {
+            return next(new BadRequestError('Недопустимое поле для сортировки'))
         }
+
+        sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
 
         aggregatePipeline.push(
             { $sort: sort },

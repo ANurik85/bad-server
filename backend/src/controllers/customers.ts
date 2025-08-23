@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { FilterQuery } from 'mongoose'
+import BadRequestError from '../errors/bad-request-error'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
@@ -122,10 +123,12 @@ export const getCustomers = async (
 
         const allowedSortFields = ['createdAt', 'name', 'totalAmount', 'orderCount', 'lastOrderDate']
 
-        if (sortField && allowedSortFields.includes(sortField as string)) {
+        if (sortField && !allowedSortFields.includes(sortField as string)) {
+            return next(new BadRequestError('Недопустимое поле для сортировки'))
+        }
+
+        if (sortField && sortOrder) {
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
-        } else {
-           sort.createdAt = sortOrder === 'desc' ? -1 : 1
         }
 
         const options = {
